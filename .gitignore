@@ -34,3 +34,6 @@ Thumbs.db
 # Node/local tooling
 node_modules/
 npm-debug.log*
+
+# WebGL output folder
+WebGLBuild/

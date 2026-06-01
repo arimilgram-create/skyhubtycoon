@@ -1,3 +1,4 @@
+// Owns the airport tile grid, converts mouse/world positions to grid cells, and tracks floor/buildable occupancy.
 using System.Collections.Generic;
 using UnityEngine;
 using SkyHubTycoon.Build;

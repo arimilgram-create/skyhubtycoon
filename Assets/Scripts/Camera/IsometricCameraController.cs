@@ -1,3 +1,4 @@
+// Orthographic 2/3 isometric camera controller using WebGL-safe keyboard and mouse input.
 using UnityEngine;
 
 namespace SkyHubTycoon.CameraControls

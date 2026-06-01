@@ -1,3 +1,4 @@
+// Stores lightweight tycoon simulation state for money, staff, routes, utilities, satisfaction, reputation, and unlock progress.
 using System;
 using System.Collections.Generic;
 using UnityEngine;

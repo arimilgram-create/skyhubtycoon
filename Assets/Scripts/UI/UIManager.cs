@@ -1,6 +1,9 @@
+// Builds scalable WebGL-friendly runtime UI, including start menu, pause menu, HUD, controls, alerts, and build buttons.
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
+using UnityEngine.SceneManagement;
 using SkyHubTycoon.Build;
 using SkyHubTycoon.CameraControls;
 using SkyHubTycoon.Data;
@@ -34,13 +37,32 @@ namespace SkyHubTycoon.UI
         private bool roofsVisible;
         private bool cutaway = true;
         private bool gridVisible = true;
+        private GameObject startMenu;
+        private GameObject pauseMenu;
+        private bool gameStarted;
+        private bool paused;
+
+        public bool IsInputBlocked { get { return !gameStarted || paused; } }
 
         private void Start()
         {
             if (canvas == null) BuildRuntimeCanvas();
+            gameStarted = false;
+            paused = false;
+            Time.timeScale = 0f;
             if (airport != null) airport.Changed += Refresh;
             PopulateBuildMenu();
             Refresh();
+        }
+
+        private void Update()
+        {
+            // Escape is WebGL-safe and works in both the Editor and browser builds.
+            if (gameStarted && Input.GetKeyDown(KeyCode.Escape))
+            {
+                if (paused) ResumeGame();
+                else PauseGame();
+            }
         }
 
         private void OnDestroy()
@@ -145,10 +167,14 @@ namespace SkyHubTycoon.UI
 
         private void BuildRuntimeCanvas()
         {
+            EnsureSingleEventSystem();
             GameObject canvasObject = new GameObject("SkyHub Runtime UI");
             canvas = canvasObject.AddComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            canvasObject.AddComponent<CanvasScaler>().uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            CanvasScaler scaler = canvasObject.AddComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1920f, 1080f);
+            scaler.matchWidthOrHeight = 0.5f;
             canvasObject.AddComponent<GraphicRaycaster>();
 
             Font font = Resources.GetBuiltinResource<Font>("Arial.ttf");
@@ -197,6 +223,9 @@ namespace SkyHubTycoon.UI
             Text alertTemplate = CreateText(alertsRect, "", font, 13, TextAnchor.UpperLeft);
             alertTemplate.gameObject.SetActive(false);
             alertManager.alertPrefab = alertTemplate;
+
+            BuildStartMenu(canvas.transform, font);
+            BuildPauseMenu(canvas.transform, font);
         }
 
         private RectTransform CreatePanel(Transform parent, string name, Vector2 anchorMin, Vector2 anchorMax, Vector2 anchoredPosition, Vector2 size)
@@ -232,7 +261,7 @@ namespace SkyHubTycoon.UI
             return uiText;
         }
 
-        private void CreateButton(Transform parent, string label, UnityEngine.Events.UnityAction action)
+        private Button CreateButton(Transform parent, string label, UnityEngine.Events.UnityAction action)
         {
             GameObject buttonObject = new GameObject(label + " Button");
             buttonObject.transform.SetParent(parent, false);
@@ -250,6 +279,102 @@ namespace SkyHubTycoon.UI
             rect.anchorMax = Vector2.one;
             rect.offsetMin = Vector2.zero;
             rect.offsetMax = Vector2.zero;
+            return button;
+        }
+
+
+        private void EnsureSingleEventSystem()
+        {
+            EventSystem[] systems = FindObjectsOfType<EventSystem>();
+            for (int i = 1; i < systems.Length; i++) Destroy(systems[i].gameObject);
+            if (systems.Length == 0)
+            {
+                GameObject eventSystem = new GameObject("EventSystem");
+                eventSystem.AddComponent<EventSystem>();
+                eventSystem.AddComponent<StandaloneInputModule>();
+            }
+        }
+
+        private void BuildStartMenu(Transform parent, Font font)
+        {
+            RectTransform menu = CreatePanel(parent, "Start Menu", new Vector2(0f, 0f), new Vector2(1f, 1f), Vector2.zero, Vector2.zero);
+            startMenu = menu.gameObject;
+            Image image = startMenu.GetComponent<Image>();
+            image.color = new Color(0.02f, 0.05f, 0.11f, 0.94f);
+
+            VerticalLayoutGroup layout = startMenu.AddComponent<VerticalLayoutGroup>();
+            layout.padding = new RectOffset(620, 620, 220, 220);
+            layout.spacing = 18f;
+            layout.childControlWidth = true;
+            layout.childForceExpandWidth = true;
+            layout.childControlHeight = true;
+
+            Text title = CreateText(menu, "SkyHub Tycoon", font, 46, TextAnchor.MiddleCenter);
+            title.color = new Color(0.55f, 0.93f, 1f);
+            CreateText(menu, "Controls: Left click builds · WASD / Arrow keys pan · Mouse wheel zooms · Q/E rotate · Escape pauses", font, 18, TextAnchor.MiddleCenter);
+            CreateText(menu, "Build a complete airport flow, then schedule flights for money and reputation.", font, 18, TextAnchor.MiddleCenter);
+            CreateButton(menu, "Play", PlayGame);
+            CreateButton(menu, "Settings: Browser-friendly defaults are enabled", delegate { });
+            // No Quit button is created: WebGL games run inside a browser tab.
+        }
+
+        private void BuildPauseMenu(Transform parent, Font font)
+        {
+            RectTransform menu = CreatePanel(parent, "Pause Menu", new Vector2(0f, 0f), new Vector2(1f, 1f), Vector2.zero, Vector2.zero);
+            pauseMenu = menu.gameObject;
+            Image image = pauseMenu.GetComponent<Image>();
+            image.color = new Color(0.02f, 0.05f, 0.11f, 0.86f);
+
+            VerticalLayoutGroup layout = pauseMenu.AddComponent<VerticalLayoutGroup>();
+            layout.padding = new RectOffset(720, 720, 290, 290);
+            layout.spacing = 16f;
+            layout.childControlWidth = true;
+            layout.childForceExpandWidth = true;
+            layout.childControlHeight = true;
+
+            CreateText(menu, "Paused", font, 42, TextAnchor.MiddleCenter);
+            CreateButton(menu, "Resume", ResumeGame);
+            CreateButton(menu, "Restart", RestartScene);
+            CreateButton(menu, "Main Menu", ShowMainMenu);
+            pauseMenu.SetActive(false);
+        }
+
+        public void PlayGame()
+        {
+            gameStarted = true;
+            paused = false;
+            Time.timeScale = 1f;
+            if (startMenu != null) startMenu.SetActive(false);
+            if (pauseMenu != null) pauseMenu.SetActive(false);
+        }
+
+        public void PauseGame()
+        {
+            paused = true;
+            Time.timeScale = 0f;
+            if (pauseMenu != null) pauseMenu.SetActive(true);
+        }
+
+        public void ResumeGame()
+        {
+            paused = false;
+            Time.timeScale = 1f;
+            if (pauseMenu != null) pauseMenu.SetActive(false);
+        }
+
+        public void RestartScene()
+        {
+            Time.timeScale = 1f;
+            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+        }
+
+        public void ShowMainMenu()
+        {
+            paused = false;
+            gameStarted = false;
+            Time.timeScale = 0f;
+            if (pauseMenu != null) pauseMenu.SetActive(false);
+            if (startMenu != null) startMenu.SetActive(true);
         }
 
         private void AddVerticalLayout(GameObject target)

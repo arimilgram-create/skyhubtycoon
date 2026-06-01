@@ -1,79 +1,96 @@
 # SkyHub Tycoon
 
-SkyHub Tycoon is now a **Unity 2022.3 LTS starter project** for a cozy 2/3 isometric, grid-based airport tycoon. The repository still includes the earlier browser prototype for reference, but the root now contains the Unity project folders Unity Hub expects: `Assets/`, `Packages/`, and `ProjectSettings/`.
+SkyHub Tycoon is a clean, upload-ready **Unity 2022.3 LTS WebGL starter project** for a cozy 2/3 isometric, grid-based airport tycoon. The repository includes the folder structure Unity Hub expects and can generate a playable `MainScene.unity` with no manual asset setup.
 
-## Open it in Unity
+## Required Unity version
 
-1. Install **Unity Hub** and **Unity 2022.3 LTS**. The project version file targets `2022.3.20f1`.
-2. In Unity Hub, choose **Add project from disk**.
-3. Select this repository folder: `skyhubtycoon`.
-4. Open the project.
-5. On first import, the editor bootstrap creates the playable starter assets and scene automatically at:
-   - `Assets/SkyHubTycoon/Scenes/SkyHubTycoon.unity`
-6. If the scene was not generated for any reason, run:
-   - **Tools → SkyHub Tycoon → Create Full Starter Project**
-7. Open `Assets/SkyHubTycoon/Scenes/SkyHubTycoon.unity` and press **Play**.
+Use **Unity 2022.3 LTS**. The project version file targets `2022.3.20f1`.
 
-## What is included in the Unity project
-
-- A 24×24 grid manager with whole-tile floor and object placement.
-- ScriptableObject data models for floor zones and buildable airport objects.
-- A placement validator for bounds, money, overlap, floor connectivity, zone restrictions, object prerequisites, queue clearance, adjacency, and gate seating efficiency.
-- A 2/3 isometric orthographic camera with pan, zoom, and 90-degree rotation.
-- Runtime Unity UI for build tools, brushes, HUD, alerts, staff, systems, unlocks, flight scheduling, bulldoze, and view toggles.
-- Starter generated prefabs/materials for floors, previews, and airport objects.
-- A simple simulation for money, satisfaction, reputation, passengers, staff, power, water, passenger route, baggage route, airfield route, and flight rewards.
-
-## How to play in Unity
-
-1. Press **Play** in `SkyHubTycoon.unity`.
-2. Use the left build menu to choose a floor or airport object.
-3. Use brush buttons for floor sizes like `1×1`, `2×2`, `3×3`, and `10×10`.
-4. Hover the grid for placement feedback:
-   - Green = valid
-   - Red = invalid
-   - Yellow = allowed but inefficient
-5. Build this first-airport flow:
-   - Public floor
-   - Entrance door on the edge
-   - Check-in desk
-   - Secure floor
-   - Security checkpoint
-   - Waiting or gate floor
-   - Seating
-   - Airfield pavement
-   - Small runway
-   - Taxiway
-   - Gate floor
-   - Small boarding gate
-6. Click **Schedule next flight** once passenger and airfield systems are online.
-
-## Unity source layout
+## Project structure
 
 ```text
-Assets/Scripts/Data          ScriptableObject definitions and enums
-Assets/Scripts/Grid          Grid cells and world/grid conversion
-Assets/Scripts/Build         Placement controller, preview, validator, instances
-Assets/Scripts/Simulation    Airport state and flight scheduling
-Assets/Scripts/UI            Runtime Canvas UI and alerts
-Assets/Scripts/Camera        Isometric camera controller
-Assets/Scripts/Editor        One-click/auto project bootstrap for scene/assets
+Assets/
+  Audio/        Lightweight audio placeholder folder for WebGL-safe compressed audio
+  Data/         Generated buildable ScriptableObjects
+  Floors/       Generated floor ScriptableObjects
+  Materials/   Generated lightweight materials
+  Prefabs/      Generated lightweight prefabs
+  Scenes/       MainScene.unity is generated here
+  Scripts/      Runtime/editor C# source
+  UI/           UI placeholder folder
+Packages/       Unity package manifest
+ProjectSettings/ Unity version, build scene, editor settings, graphics settings
 ```
 
-## Browser prototype
+## Open the project in Unity Hub
 
-The original browser prototype is still available for design reference:
+1. Open **Unity Hub**.
+2. Choose **Add project from disk**.
+3. Select this repository folder: `skyhubtycoon`.
+4. Open it with **Unity 2022.3 LTS**.
+5. Wait for package import and script compilation.
+6. The editor bootstrap automatically creates:
+   - `Assets/Scenes/MainScene.unity`
+   - starter ScriptableObjects in `Assets/Data` and `Assets/Floors`
+   - starter prefabs in `Assets/Prefabs`
+   - starter materials in `Assets/Materials`
+   - WebGL build settings with `MainScene.unity` as Scene 0
+7. If generation does not run automatically, choose **Tools > SkyHub Tycoon > Create Full Starter Project**.
+
+## Test in Unity
+
+1. Open `Assets/Scenes/MainScene.unity`.
+2. Press **Play**.
+3. Click the start-menu **Play** button.
+4. Build a basic airport, then click **Schedule next flight** when passenger and airfield routes are online.
+
+## WebGL-friendly controls
+
+- **Left click**: place the selected floor/object.
+- **WASD / Arrow keys**: pan the isometric camera.
+- **Mouse wheel**: zoom.
+- **Q / E**: rotate the camera in 90-degree steps.
+- **Escape**: pause/resume.
+
+The WebGL game has a start menu, controls text, pause menu, resume button, restart button, and main-menu button. It intentionally does **not** show a quit button because browser games should not call `Application.Quit`.
+
+## Build for WebGL
+
+1. Go to **File > Build Settings**.
+2. Select **WebGL**.
+3. Click **Switch Platform**.
+4. Make sure `Assets/Scenes/MainScene.unity` is listed as scene index `0`.
+5. Click **Build**.
+6. Choose a folder named `WebGLBuild`.
+7. Upload the **contents** of `WebGLBuild` to itch.io, GitHub Pages, Netlify, or your own web host.
+
+For exact upload steps, see [`BUILD_INSTRUCTIONS.md`](BUILD_INSTRUCTIONS.md).
+
+## What is included
+
+- 24×24 whole-tile airport grid.
+- ScriptableObject floor zones and buildable airport object definitions.
+- Placement preview colors: green valid, red invalid, yellow inefficient.
+- Placement validation for money, bounds, overlap, floor connectivity, zone restrictions, dependencies, queue space, adjacency, and gate seating efficiency.
+- Start menu and pause menu built for browser play.
+- Runtime Canvas UI with `Scale With Screen Size` and reference resolution `1920x1080`.
+- Lightweight generated primitive prefabs/materials to keep WebGL builds small.
+- Simple simulation for money, staff, satisfaction, reputation, power, water, passenger route, baggage route, airfield route, unlocks, and flight rewards.
+
+## Repository checks
+
+These checks do not require Unity; they validate the original JS rule tests and verify the Unity WebGL project structure/scripts exist:
+
+```bash
+npm test
+```
+
+## Browser prototype reference
+
+The earlier browser prototype is still available for design reference:
 
 ```bash
 npm start
 ```
 
 Open <http://127.0.0.1:4173/>.
-
-## Repository checks
-
-These checks do not require Unity; they validate the original rule tests and verify that the Unity project structure/scripts exist:
-
-```bash
-npm test
-```

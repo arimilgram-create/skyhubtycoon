@@ -1,4 +1,5 @@
 #if UNITY_EDITOR
+// Editor-only bootstrap that creates the upload-ready MainScene, starter assets, build settings, and WebGL configuration.
 using System.Collections.Generic;
 using System.IO;
 using UnityEditor;
@@ -15,8 +16,13 @@ namespace SkyHubTycoon.EditorTools
 {
     public static class SkyHubProjectBootstrap
     {
-        private const string Root = "Assets/SkyHubTycoon";
-        private const string ScenePath = Root + "/Scenes/SkyHubTycoon.unity";
+        private const string DataRoot = "Assets/Data";
+        private const string FloorRoot = "Assets/Floors";
+        private const string MaterialRoot = "Assets/Materials";
+        private const string PrefabRoot = "Assets/Prefabs";
+        private const string SceneRoot = "Assets/Scenes";
+        // Final generated scene path: Assets/Scenes/MainScene.unity
+        private const string ScenePath = SceneRoot + "/MainScene.unity";
 
         [InitializeOnLoadMethod]
         private static void AutoCreateStarterProject()
@@ -56,20 +62,37 @@ namespace SkyHubTycoon.EditorTools
             CreateGameSystems(floorArray, buildables, previewPrefab, validPreview, invalidPreview, warningPreview);
 
             EditorSceneManager.SaveScene(EditorSceneManager.GetActiveScene(), ScenePath);
-            EditorBuildSettings.scenes = new EditorBuildSettingsScene[] { new EditorBuildSettingsScene(ScenePath, true) };
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
-            Debug.Log("SkyHub Tycoon Unity starter project generated at " + ScenePath + ". Open this scene and press Play.");
+            ConfigureWebGLBuildSettings();
+            Debug.Log("SkyHub Tycoon WebGL-ready starter project generated at " + ScenePath + ". Open this scene and press Play, then build WebGL.");
+        }
+
+
+        private static void ConfigureWebGLBuildSettings()
+        {
+            EditorBuildSettings.scenes = new EditorBuildSettingsScene[] { new EditorBuildSettingsScene(ScenePath, true) };
+            EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.WebGL, BuildTarget.WebGL);
+            PlayerSettings.WebGL.compressionFormat = WebGLCompressionFormat.Brotli;
+            PlayerSettings.WebGL.decompressionFallback = true;
+            PlayerSettings.WebGL.dataCaching = true;
+            PlayerSettings.WebGL.memorySize = 256;
+            PlayerSettings.defaultScreenWidth = 1280;
+            PlayerSettings.defaultScreenHeight = 720;
+            PlayerSettings.fullScreenMode = FullScreenMode.Windowed;
+            PlayerSettings.runInBackground = true;
         }
 
         private static void EnsureFolders()
         {
-            CreateFolder("Assets", "SkyHubTycoon");
-            CreateFolder(Root, "Data");
-            CreateFolder(Root, "Floors");
-            CreateFolder(Root, "Materials");
-            CreateFolder(Root, "Prefabs");
-            CreateFolder(Root, "Scenes");
+            CreateFolder("Assets", "Scenes");
+            CreateFolder("Assets", "Scripts");
+            CreateFolder("Assets", "Prefabs");
+            CreateFolder("Assets", "Materials");
+            CreateFolder("Assets", "Audio");
+            CreateFolder("Assets", "UI");
+            CreateFolder("Assets", "Data");
+            CreateFolder("Assets", "Floors");
         }
 
         private static void CreateFolder(string parent, string child)
@@ -80,7 +103,7 @@ namespace SkyHubTycoon.EditorTools
 
         private static Material CreateMaterial(string name, Color color)
         {
-            string path = Root + "/Materials/" + name + ".mat";
+            string path = MaterialRoot + "/" + name + ".mat";
             Material existing = AssetDatabase.LoadAssetAtPath<Material>(path);
             if (existing != null) return existing;
 
@@ -109,7 +132,7 @@ namespace SkyHubTycoon.EditorTools
 
         private static GameObject CreateFloorPrefab()
         {
-            string path = Root + "/Prefabs/FloorTile.prefab";
+            string path = PrefabRoot + "/FloorTile.prefab";
             GameObject existing = AssetDatabase.LoadAssetAtPath<GameObject>(path);
             if (existing != null) return existing;
 
@@ -124,7 +147,7 @@ namespace SkyHubTycoon.EditorTools
 
         private static GameObject CreatePreviewPrefab(Material material)
         {
-            string path = Root + "/Prefabs/PlacementPreviewTile.prefab";
+            string path = PrefabRoot + "/PlacementPreviewTile.prefab";
             GameObject existing = AssetDatabase.LoadAssetAtPath<GameObject>(path);
             if (existing != null) return existing;
 
@@ -159,7 +182,7 @@ namespace SkyHubTycoon.EditorTools
 
         private static void AddFloor(Dictionary<string, FloorDefinition> target, string id, string label, ZoneType zone, Color color, int cost, bool passenger, bool staff, bool baggage, bool vehicle, GameObject prefab)
         {
-            string path = Root + "/Floors/" + id + ".asset";
+            string path = FloorRoot + "/" + id + ".asset";
             FloorDefinition floor = AssetDatabase.LoadAssetAtPath<FloorDefinition>(path);
             if (floor == null)
             {
@@ -206,7 +229,7 @@ namespace SkyHubTycoon.EditorTools
 
         private static BuildableDefinition AddBuildable(string id, string label, BuildableType type, BuildCategory category, Vector2Int size, int cost, FloorDefinition[] allowedFloors, string warning, Color tint, int powerUse, int waterUse, int powerProduction, int waterProduction)
         {
-            string path = Root + "/Data/" + id + ".asset";
+            string path = DataRoot + "/" + id + ".asset";
             BuildableDefinition buildable = AssetDatabase.LoadAssetAtPath<BuildableDefinition>(path);
             if (buildable == null)
             {
@@ -235,7 +258,7 @@ namespace SkyHubTycoon.EditorTools
 
         private static GameObject CreateBuildablePrefab(string id, string label, Color tint)
         {
-            string path = Root + "/Prefabs/" + id + ".prefab";
+            string path = PrefabRoot + "/" + id + ".prefab";
             GameObject existing = AssetDatabase.LoadAssetAtPath<GameObject>(path);
             if (existing != null) return existing;
 

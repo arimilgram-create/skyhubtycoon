@@ -1,3 +1,4 @@
+// Central rule engine for WebGL-safe build placement: checks bounds, money, zones, overlap, dependencies, adjacency, and warnings.
 using System.Collections.Generic;
 using UnityEngine;
 using SkyHubTycoon.Data;
