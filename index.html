@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="SkyHub Tycoon - a static GitHub Pages airport tycoon browser game." />
+    <title>SkyHub Tycoon</title>
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <div id="loadingScreen" class="overlay is-visible">
+        <div class="menu-card">
+          <h1>Loading SkyHub Tycoon…</h1>
+          <p>Preparing the airport grid.</p>
+        </div>
+      </div>
+
+      <div id="mainMenu" class="overlay">
+        <div class="menu-card menu-card--wide">
+          <p class="eyebrow">GitHub Pages Browser Game</p>
+          <h1>SkyHub Tycoon</h1>
+          <p class="menu-copy">
+            Build a cozy grid-based airport from a tiny runway into a busy international hub.
+          </p>
+          <div class="controls-grid">
+            <span><strong>WASD / Arrows</strong> Pan camera</span>
+            <span><strong>Mouse wheel</strong> Zoom</span>
+            <span><strong>Left click</strong> Build / select</span>
+            <span><strong>Space</strong> Schedule flight</span>
+            <span><strong>E</strong> Rotate camera</span>
+            <span><strong>Esc</strong> Pause</span>
+          </div>
+          <div class="menu-actions">
+            <button id="playButton" type="button">Play</button>
+            <button id="continueButton" type="button">Continue</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="gameShell">
+        <canvas id="gameCanvas" width="1280" height="720" aria-label="SkyHub Tycoon game canvas"></canvas>
+
+        <div id="hud" class="hud is-hidden">
+          <div class="hud__stats">
+            <span>Money <strong id="moneyText">$0</strong></span>
+            <span>Satisfaction <strong id="satisfactionText">0%</strong></span>
+            <span>Reputation <strong id="reputationText">★ 0.0</strong></span>
+            <span>Flights <strong id="flightsText">0</strong></span>
+            <span>Level <strong id="levelText">1</strong></span>
+          </div>
+          <div id="buildMenu" class="build-menu" aria-label="Build tools"></div>
+          <div id="messageLog" class="message-log" aria-live="polite"></div>
+        </div>
+      </div>
+
+      <div id="pauseMenu" class="overlay">
+        <div class="menu-card">
+          <h2>Paused</h2>
+          <p>Plan your next expansion, then get back to building.</p>
+          <div class="menu-actions menu-actions--stacked">
+            <button id="resumeButton" type="button">Resume</button>
+            <button id="restartButton" type="button">Restart</button>
+            <button id="mainMenuButton" type="button">Main Menu</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="gameOverScreen" class="overlay">
+        <div class="menu-card">
+          <h2>Airport Closed</h2>
+          <p id="gameOverReason">Your airport ran out of money.</p>
+          <p>High Score: <strong id="highScoreText">0</strong> passengers</p>
+          <div class="menu-actions menu-actions--stacked">
+            <button id="gameOverRestartButton" type="button">Restart</button>
+            <button id="gameOverMenuButton" type="button">Main Menu</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="js/levels.js"></script>
+    <script src="js/save.js"></script>
+    <script src="js/input.js"></script>
+    <script src="js/player.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/game.js"></script>
+    <script src="js/main.js"></script>
+  </body>
+</html>
