@@ -1,0 +1,116 @@
+namespace SkyHubTycoon.Data
+{
+    public enum ZoneType
+    {
+        Entrance,
+        CheckIn,
+        Security,
+        Waiting,
+        Gate,
+        Baggage,
+        Shop,
+        Bathroom,
+        Staff,
+        VIP,
+        Customs,
+        Maintenance,
+        Airfield
+    }
+
+    public enum BuildCategory
+    {
+        Floors,
+        WallsAndDoors,
+        PassengerProcessing,
+        GatesAndFlights,
+        Airfield,
+        Baggage,
+        Comfort,
+        Shops,
+        Staff,
+        Utilities,
+        Decorations
+    }
+
+    public enum BuildableType
+    {
+        Entrance,
+        PublicDoor,
+        StaffDoor,
+        SecurityDoor,
+        EmergencyExit,
+        CheckIn,
+        LargeCheckIn,
+        Kiosk,
+        BagDrop,
+        Security,
+        MetalDetector,
+        PassportControl,
+        CustomsDesk,
+        Seating,
+        Bench,
+        LuxurySeating,
+        SmallGate,
+        MediumGate,
+        LargeGate,
+        InternationalGate,
+        BoardingDesk,
+        JetBridge,
+        AircraftStand,
+        Runway,
+        MediumRunway,
+        LargeRunway,
+        InternationalRunway,
+        Taxiway,
+        ServiceRoad,
+        FuelStation,
+        MaintenanceHangar,
+        ControlTower,
+        Conveyor,
+        ConveyorCorner,
+        ConveyorWallPort,
+        SortingMachine,
+        CartLoadingZone,
+        Carousel,
+        Bathroom,
+        TrashBin,
+        VendingMachine,
+        InfoScreen,
+        Plant,
+        Coffee,
+        SnackKiosk,
+        Restaurant,
+        GiftShop,
+        DutyFreeShop,
+        Bookstore,
+        StaffRoom,
+        Locker,
+        BreakTable,
+        CleaningCloset,
+        SecurityOffice,
+        MaintenanceRoom,
+        Generator,
+        PowerRoom,
+        WaterHub,
+        SolarPanel,
+        Light
+    }
+
+    public enum AgentPathType
+    {
+        Passenger,
+        Staff,
+        Baggage,
+        Vehicle
+    }
+
+    public enum MissionType
+    {
+        FirstWorkingAirport,
+        HandlePassengers,
+        HandleFlightsWithoutDelay,
+        ReachSatisfaction,
+        BuildGateCount,
+        UnlockInternational
+    }
+}
