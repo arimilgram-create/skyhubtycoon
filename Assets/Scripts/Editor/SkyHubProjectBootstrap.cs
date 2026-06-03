@@ -52,7 +52,7 @@ namespace SkyHubTycoon.EditorTools
             BuildableDefinition[] buildables = CreateBuildableDefinitions(floors);
             FloorDefinition[] floorArray = new FloorDefinition[]
             {
-                floors["public"], floors["secure"], floors["waiting"], floors["gate"], floors["baggage"], floors["shop"], floors["bathroom"], floors["staff"], floors["vip"], floors["customs"], floors["airfield"]
+                floors["public"]
             };
 
             EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
@@ -166,17 +166,7 @@ namespace SkyHubTycoon.EditorTools
         private static Dictionary<string, FloorDefinition> CreateFloorDefinitions(GameObject floorPrefab)
         {
             Dictionary<string, FloorDefinition> result = new Dictionary<string, FloorDefinition>();
-            AddFloor(result, "public", "Public floor", ZoneType.Entrance, new Color(0.56f, 0.78f, 1f), 45, true, true, false, false, floorPrefab);
-            AddFloor(result, "secure", "Secure floor", ZoneType.Security, new Color(0.73f, 0.65f, 1f), 70, true, true, false, false, floorPrefab);
-            AddFloor(result, "waiting", "Waiting carpet", ZoneType.Waiting, new Color(0.52f, 0.84f, 0.76f), 65, true, true, false, false, floorPrefab);
-            AddFloor(result, "gate", "Gate floor", ZoneType.Gate, new Color(0.44f, 0.68f, 0.97f), 75, true, true, false, false, floorPrefab);
-            AddFloor(result, "baggage", "Baggage floor", ZoneType.Baggage, new Color(0.95f, 0.74f, 0.42f), 60, false, true, true, false, floorPrefab);
-            AddFloor(result, "shop", "Shop floor", ZoneType.Shop, new Color(1f, 0.82f, 0.43f), 80, true, true, false, false, floorPrefab);
-            AddFloor(result, "bathroom", "Bathroom floor", ZoneType.Bathroom, new Color(0.62f, 0.91f, 0.93f), 55, true, true, false, false, floorPrefab);
-            AddFloor(result, "staff", "Staff floor", ZoneType.Staff, new Color(0.72f, 0.77f, 0.84f), 45, false, true, false, false, floorPrefab);
-            AddFloor(result, "vip", "VIP floor", ZoneType.VIP, new Color(0.9f, 0.76f, 0.43f), 180, true, true, false, false, floorPrefab);
-            AddFloor(result, "customs", "Customs floor", ZoneType.Customs, new Color(0.84f, 0.6f, 0.85f), 130, true, true, false, false, floorPrefab);
-            AddFloor(result, "airfield", "Airfield pavement", ZoneType.Airfield, new Color(0.37f, 0.45f, 0.52f), 35, false, false, false, true, floorPrefab);
+            AddFloor(result, "public", "Basic terminal floor", ZoneType.Entrance, new Color(0.56f, 0.78f, 1f), 25, true, true, false, false, floorPrefab);
             return result;
         }
 
@@ -206,24 +196,15 @@ namespace SkyHubTycoon.EditorTools
 
         private static BuildableDefinition[] CreateBuildableDefinitions(Dictionary<string, FloorDefinition> floors)
         {
+            FloorDefinition terminal = floors["public"];
             List<BuildableDefinition> buildables = new List<BuildableDefinition>();
-            buildables.Add(AddBuildable("entrance", "Entrance door", BuildableType.Entrance, BuildCategory.WallsAndDoors, new Vector2Int(2, 1), 900, new[] { floors["public"] }, "Must connect outside pavement to indoor public terminal floor.", new Color(0.4f, 0.9f, 1f), 0, 0, 0, 0));
-            buildables.Add(AddBuildable("checkin", "Check-in desk", BuildableType.CheckIn, BuildCategory.PassengerProcessing, new Vector2Int(2, 1), 500, new[] { floors["public"] }, "Must be indoors in the Check-In Zone with two clear queue tiles and a path to entrance.", new Color(0.9f, 0.72f, 0.34f), 0, 0, 0, 0));
-            buildables.Add(AddBuildable("kiosk", "Self check-in kiosk", BuildableType.Kiosk, BuildCategory.PassengerProcessing, Vector2Int.one, 350, new[] { floors["public"] }, "Must be near an entrance and on passenger-accessible floor.", new Color(0.34f, 0.9f, 0.95f), 1, 0, 0, 0));
-            buildables.Add(AddBuildable("security", "Security checkpoint", BuildableType.Security, BuildCategory.PassengerProcessing, new Vector2Int(2, 3), 1500, new[] { floors["secure"] }, "Requires check-in first, security floor, queue space, staff access, and a route toward gates.", new Color(0.65f, 0.45f, 1f), 4, 0, 0, 0));
-            buildables.Add(AddBuildable("seating", "Seating row", BuildableType.Seating, BuildCategory.Comfort, new Vector2Int(2, 1), 180, new[] { floors["waiting"], floors["gate"] }, "Place after security on waiting or gate floors without blocking main paths.", new Color(0.25f, 0.7f, 1f), 0, 0, 0, 0));
-            buildables.Add(AddBuildable("smallGate", "Small boarding gate", BuildableType.SmallGate, BuildCategory.GatesAndFlights, new Vector2Int(3, 2), 5000, new[] { floors["gate"] }, "Needs secure path, nearby seating, runway, taxiway, and an outside aircraft stand.", new Color(0.72f, 0.92f, 1f), 3, 0, 0, 0));
-            buildables.Add(AddBuildable("runway", "Small runway", BuildableType.Runway, BuildCategory.Airfield, new Vector2Int(20, 3), 20000, new[] { floors["airfield"] }, "Runway must be straight, outdoors, at least 3×20, and clear of buildings.", new Color(0.1f, 0.13f, 0.18f), 0, 0, 0, 0));
-            buildables.Add(AddBuildable("taxiway", "Taxiway", BuildableType.Taxiway, BuildCategory.Airfield, new Vector2Int(2, 2), 600, new[] { floors["airfield"] }, "Taxiways must be outdoors on airfield pavement and connect runway to aircraft stands.", new Color(0.18f, 0.22f, 0.3f), 0, 0, 0, 0));
-            buildables.Add(AddBuildable("bagDrop", "Bag drop", BuildableType.BagDrop, BuildCategory.Baggage, Vector2Int.one, 800, new[] { floors["public"], floors["baggage"] }, "Must sit next to check-in and connect to baggage conveyor.", new Color(0.95f, 0.55f, 0.2f), 0, 0, 0, 0));
-            buildables.Add(AddBuildable("conveyor", "Conveyor belt", BuildableType.Conveyor, BuildCategory.Baggage, Vector2Int.one, 120, new[] { floors["baggage"] }, "Must be on baggage floor and connect edge-to-edge through wall ports.", new Color(0.2f, 0.2f, 0.22f), 1, 0, 0, 0));
-            buildables.Add(AddBuildable("carousel", "Baggage carousel", BuildableType.Carousel, BuildCategory.Baggage, new Vector2Int(3, 2), 4000, new[] { floors["baggage"] }, "Requires gate, connected conveyor, and accessible baggage claim space.", new Color(0.75f, 0.35f, 0.15f), 2, 0, 0, 0));
-            buildables.Add(AddBuildable("bathroom", "Bathroom suite", BuildableType.Bathroom, BuildCategory.Comfort, new Vector2Int(3, 2), 1200, new[] { floors["bathroom"] }, "Needs bathroom floor, passenger access, plumbing, and cannot open into food prep.", new Color(0.7f, 0.95f, 1f), 0, 3, 0, 0));
-            buildables.Add(AddBuildable("coffee", "Coffee stand", BuildableType.Coffee, BuildCategory.Shops, new Vector2Int(2, 1), 2000, new[] { floors["shop"] }, "Must face a passenger path on shop floor with clear counter space.", new Color(0.78f, 0.45f, 0.2f), 1, 1, 0, 0));
-            buildables.Add(AddBuildable("staffRoom", "Staff room", BuildableType.StaffRoom, BuildCategory.Staff, new Vector2Int(3, 2), 1800, new[] { floors["staff"] }, "Must be staff-only with lockers, break furniture, and staff path access.", new Color(0.72f, 0.77f, 0.84f), 0, 0, 0, 0));
-            buildables.Add(AddBuildable("generator", "Generator", BuildableType.Generator, BuildCategory.Utilities, new Vector2Int(2, 2), 2500, new[] { floors["staff"], floors["airfield"] }, "Place in utility/staff space or outdoors on airfield pavement.", new Color(1f, 0.9f, 0.2f), 0, 0, 18, 0));
-            buildables.Add(AddBuildable("waterHub", "Plumbing hub", BuildableType.WaterHub, BuildCategory.Utilities, new Vector2Int(2, 2), 1900, new[] { floors["staff"] }, "Place in staff-only utility rooms to supply bathrooms and restaurants.", new Color(0.25f, 0.7f, 1f), 0, 0, 0, 12));
-            buildables.Add(AddBuildable("passport", "Passport control", BuildableType.PassportControl, BuildCategory.PassengerProcessing, new Vector2Int(2, 2), 4500, new[] { floors["customs"] }, "International processing requires customs floor and airport level 5.", new Color(0.8f, 0.45f, 0.9f), 3, 0, 0, 0));
+            buildables.Add(AddBuildable("entrance", "Entrance", BuildableType.Entrance, BuildCategory.WallsAndDoors, new Vector2Int(2, 1), 500, new[] { terminal }, "Entrance must snap onto basic terminal floor.", new Color(0.4f, 0.9f, 1f), 0, 0, 0, 0));
+            buildables.Add(AddBuildable("checkin", "Check-in desk", BuildableType.CheckIn, BuildCategory.PassengerProcessing, new Vector2Int(2, 1), 450, new[] { terminal }, "Check-in desk must snap onto basic terminal floor.", new Color(0.9f, 0.72f, 0.34f), 0, 0, 0, 0));
+            buildables.Add(AddBuildable("security", "Security checkpoint", BuildableType.Security, BuildCategory.PassengerProcessing, new Vector2Int(2, 2), 900, new[] { terminal }, "Security checkpoint must snap onto basic terminal floor.", new Color(0.65f, 0.45f, 1f), 0, 0, 0, 0));
+            buildables.Add(AddBuildable("seating", "Waiting seat", BuildableType.Seating, BuildCategory.Comfort, new Vector2Int(1, 1), 120, new[] { terminal }, "Waiting seat must snap onto basic terminal floor.", new Color(0.25f, 0.7f, 1f), 0, 0, 0, 0));
+            buildables.Add(AddBuildable("smallGate", "Small gate", BuildableType.SmallGate, BuildCategory.GatesAndFlights, new Vector2Int(2, 2), 2500, new[] { terminal }, "Small gate must snap onto basic terminal floor.", new Color(0.72f, 0.92f, 1f), 0, 0, 0, 0));
+            buildables.Add(AddBuildable("runway", "Small runway", BuildableType.Runway, BuildCategory.Airfield, new Vector2Int(8, 2), 6500, null, "Small runway must fit on open grid ground.", new Color(0.1f, 0.13f, 0.18f), 0, 0, 0, 0));
+            buildables.Add(AddBuildable("taxiway", "Taxiway", BuildableType.Taxiway, BuildCategory.Airfield, new Vector2Int(2, 1), 350, null, "Taxiway must fit on open grid ground.", new Color(0.18f, 0.22f, 0.3f), 0, 0, 0, 0));
             return buildables.ToArray();
         }
 
@@ -275,10 +256,28 @@ namespace SkyHubTycoon.EditorTools
         private static void CreateGround(Material groundMaterial)
         {
             GameObject ground = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            ground.name = "Unlocked Build Land (24 x 24)";
+            ground.name = "Square Build Grid Ground (24 x 24)";
             ground.transform.position = new Vector3(12f, -0.08f, 12f);
             ground.transform.localScale = new Vector3(24f, 0.08f, 24f);
             ground.GetComponent<Renderer>().sharedMaterial = groundMaterial;
+
+            Material gridMaterial = CreateMaterial("Grid_Line_Dark", new Color(0.12f, 0.22f, 0.22f));
+            for (int i = 0; i <= 24; i++)
+            {
+                GameObject vertical = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                vertical.name = "Grid Line X " + i;
+                vertical.transform.position = new Vector3(i, 0.015f, 12f);
+                vertical.transform.localScale = new Vector3(0.025f, 0.025f, 24f);
+                vertical.GetComponent<Renderer>().sharedMaterial = gridMaterial;
+                Object.DestroyImmediate(vertical.GetComponent<Collider>());
+
+                GameObject horizontal = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                horizontal.name = "Grid Line Z " + i;
+                horizontal.transform.position = new Vector3(12f, 0.02f, i);
+                horizontal.transform.localScale = new Vector3(24f, 0.025f, 0.025f);
+                horizontal.GetComponent<Renderer>().sharedMaterial = gridMaterial;
+                Object.DestroyImmediate(horizontal.GetComponent<Collider>());
+            }
         }
 
         private static void CreateCamera()

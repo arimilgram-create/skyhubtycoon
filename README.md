@@ -22,6 +22,17 @@ Packages/       Unity package manifest
 ProjectSettings/ Unity version, build scene, editor settings, graphics settings
 ```
 
+
+## Project memory and agent handoff
+
+Before adding major features, read the project handoff files:
+
+- [`GAME_MEMORY.md`](GAME_MEMORY.md) records the current vision, tech stack, core systems, completed features, known bugs, next planned features, and important design rules.
+- [`AGENT.md`](AGENT.md) explains how future AI agents should continue the project without breaking existing systems.
+- [`AGENTS.md`](AGENTS.md) is a short repository-scoped pointer for agent tooling that expects that filename.
+
+Update `GAME_MEMORY.md` whenever the game direction, completed work, bugs, next steps, or design decisions change.
+
 ## Open the project in Unity Hub
 
 1. Open **Unity Hub**.
@@ -42,7 +53,7 @@ ProjectSettings/ Unity version, build scene, editor settings, graphics settings
 1. Open `Assets/Scenes/MainScene.unity`.
 2. Press **Play**.
 3. Click the start-menu **Play** button.
-4. Build a basic airport, then click **Schedule next flight** when passenger and airfield routes are online.
+4. Build with the first prototype tools: basic terminal floor, entrance, check-in desk, security checkpoint, waiting seat, small gate, small runway, and taxiway.
 
 ## WebGL-friendly controls
 
@@ -68,14 +79,16 @@ For exact upload steps, see [`BUILD_INSTRUCTIONS.md`](BUILD_INSTRUCTIONS.md).
 
 ## What is included
 
-- 24×24 whole-tile airport grid.
-- ScriptableObject floor zones and buildable airport object definitions.
-- Placement preview colors: green valid, red invalid, yellow inefficient.
-- Placement validation for money, bounds, overlap, floor connectivity, zone restrictions, dependencies, queue space, adjacency, and gate seating efficiency.
+- 24×24 whole-tile square airport grid with visible grid lines.
+- Fixed 3D 2/3 isometric camera with smooth panning, smooth zooming, and 90-degree rotation.
+- First playable build menu with only the prototype items: basic terminal floor, entrance, check-in desk, security checkpoint, waiting seat, small gate, small runway, and taxiway.
+- Money counter and object count HUD.
+- Grid-snapped placement with selected-item preview tiles.
+- Placement preview colors: green valid and red invalid.
+- Placement validation for money, bounds, overlap, terminal-floor requirements, and open-ground airfield placement.
 - Start menu and pause menu built for browser play.
 - Runtime Canvas UI with `Scale With Screen Size` and reference resolution `1920x1080`.
 - Lightweight generated primitive prefabs/materials to keep WebGL builds small.
-- Simple simulation for money, staff, satisfaction, reputation, power, water, passenger route, baggage route, airfield route, unlocks, and flight rewards.
 
 ## Repository checks
 

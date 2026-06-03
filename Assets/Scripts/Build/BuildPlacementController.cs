@@ -1,6 +1,7 @@
 // Handles browser-friendly mouse placement, floor brushes, previews, object instantiation, and bulldozing at runtime.
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using SkyHubTycoon.Data;
 using SkyHubTycoon.Grid;
 using SkyHubTycoon.Simulation;
@@ -46,6 +47,12 @@ namespace SkyHubTycoon.Build
         private void Update()
         {
             if (grid == null || airport == null || mainCamera == null) return;
+
+            if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
+            {
+                if (preview != null) preview.Clear();
+                return;
+            }
 
             // Start and pause menus intentionally block building input for WebGL browsers.
             if (uiManager != null && uiManager.IsInputBlocked)
