@@ -1,4 +1,4 @@
-// Central rule engine for WebGL-safe build placement: checks bounds, money, zones, overlap, dependencies, adjacency, and warnings.
+// Validates prototype placement: unlocked land, overlap, floor/indoor rules, airfield connections, and passenger path blockers.
 using System.Collections.Generic;
 using UnityEngine;
 using SkyHubTycoon.Data;
@@ -23,26 +23,12 @@ namespace SkyHubTycoon.Build
             List<Vector2Int> footprint = grid.GetFootprint(origin, brushSize);
             Vector2Int[] cells = footprint.ToArray();
 
+            if (airport.money < floor.cost * footprint.Count) return PlacementResult.Invalid("Not enough money for this floor brush.", cells);
             for (int i = 0; i < footprint.Count; i++)
             {
-                if (!grid.InBounds(footprint[i])) return PlacementResult.Invalid("Outside unlocked land.", cells);
-            }
-
-            if (airport.money < floor.cost * footprint.Count) return PlacementResult.Invalid("Not enough money.", cells);
-
-            for (int i = 0; i < footprint.Count; i++)
-            {
+                if (!grid.InBounds(footprint[i])) return PlacementResult.Invalid("Nothing can be placed outside unlocked land.", cells);
                 GridCell cell = grid.GetCell(footprint[i]);
-                if (cell.HasBuildable) return PlacementResult.Invalid("Cannot overlap existing objects.", cells);
-                if (floor.zoneType != ZoneType.Airfield && cell.HasFloor && cell.Floor.Definition.zoneType == ZoneType.Airfield)
-                {
-                    return PlacementResult.Invalid("Cannot overlap runway, taxiway, or airfield pavement.", cells);
-                }
-            }
-
-            if (!grid.IsFootprintConnectedToExistingFloor(footprint))
-            {
-                return PlacementResult.Invalid("Floor must connect to an existing airport floor, entrance, service road, or terminal foundation.", cells);
+                if (cell.HasFloor || cell.HasBuildable) return PlacementResult.Invalid("Floors can only be placed on empty unlocked land.", cells);
             }
 
             return PlacementResult.Valid("Paint " + floor.displayName + ".", cells, false);
@@ -53,107 +39,229 @@ namespace SkyHubTycoon.Build
             List<Vector2Int> footprint = grid.GetFootprint(origin, definition.size);
             Vector2Int[] cells = footprint.ToArray();
 
-            for (int i = 0; i < footprint.Count; i++)
-            {
-                if (!grid.InBounds(footprint[i])) return PlacementResult.Invalid("Outside unlocked land.", cells);
-            }
-
-            if (airport.money < definition.cost) return PlacementResult.Invalid("Not enough money.", cells);
-
-            for (int i = 0; i < footprint.Count; i++)
-            {
-                GridCell cell = grid.GetCell(footprint[i]);
-                if (cell.HasBuildable) return PlacementResult.Invalid("Any object overlapping another object is not allowed.", cells);
-                if (!CellHasAllowedFloor(cell, definition)) return PlacementResult.Invalid(definition.invalidPlacementWarning, cells);
-            }
+            if (airport.money < definition.cost) return PlacementResult.Invalid("Not enough money for " + definition.displayName + ".", cells);
+            if (!FootprintIsInBounds(footprint)) return PlacementResult.Invalid("Nothing can be placed outside unlocked land.", cells);
+            if (FootprintOverlapsObject(footprint)) return PlacementResult.Invalid("Cannot overlap another object.", cells);
 
             switch (definition.type)
             {
                 case BuildableType.Entrance: return ValidateEntrance(definition, origin, cells);
                 case BuildableType.CheckIn: return ValidateCheckIn(definition, origin, cells);
-                case BuildableType.Kiosk: return ValidateKiosk(definition, origin, cells);
                 case BuildableType.Security: return ValidateSecurity(definition, origin, cells);
                 case BuildableType.Seating: return ValidateSeating(definition, origin, cells);
                 case BuildableType.SmallGate: return ValidateSmallGate(definition, origin, cells);
                 case BuildableType.Runway: return ValidateRunway(definition, origin, cells);
                 case BuildableType.Taxiway: return ValidateTaxiway(definition, origin, cells);
-                case BuildableType.BagDrop: return ValidateBagDrop(definition, origin, cells);
-                case BuildableType.Carousel: return ValidateCarousel(definition, origin, cells);
-                case BuildableType.PassportControl: return ValidatePassport(definition, origin, cells);
-                default: return PlacementResult.Valid(DefaultValidMessage(definition), cells, false);
+                default: return ValidateIndoorTerminalObject(definition, origin, cells);
             }
         }
 
         private PlacementResult ValidateEntrance(BuildableDefinition definition, Vector2Int origin, Vector2Int[] cells)
         {
-            if (!IsOutdoorEdge(origin, definition.size)) return PlacementResult.Invalid("Entrance must be placed on an exterior wall or terminal edge.", cells);
-            if (!HasClearTilesInFront(origin, definition.size.x, 2)) return PlacementResult.Invalid("Entrance must have at least 2 clear tiles in front.", cells);
+            if (!FootprintIsOnAllowedFloor(cells, definition)) return PlacementResult.Invalid("Must be placed on terminal floor.", cells);
+            if (!FootprintTouchesTerminalEdge(cells)) return PlacementResult.Invalid("Must connect to terminal.", cells);
+            if (WouldBlockPassengerPaths(cells)) return PlacementResult.Invalid("Cannot block all passenger paths.", cells);
             return PlacementResult.Valid(DefaultValidMessage(definition), cells, false);
         }
 
         private PlacementResult ValidateCheckIn(BuildableDefinition definition, Vector2Int origin, Vector2Int[] cells)
         {
-            if (!airport.HasBuildable(BuildableType.Entrance)) return PlacementResult.Invalid("Must have a passenger entrance first.", cells);
-            if (!HasClearTilesInFront(origin, definition.size.x, 2)) return PlacementResult.Invalid("Must have at least 2 clear queue tiles in front.", cells);
-            return PlacementResult.Valid(DefaultValidMessage(definition), cells, false);
-        }
-
-        private PlacementResult ValidateKiosk(BuildableDefinition definition, Vector2Int origin, Vector2Int[] cells)
-        {
-            if (!airport.HasBuildableWithin(BuildableType.Entrance, origin, 6)) return PlacementResult.Invalid("Self check-in kiosk must be near an entrance.", cells);
+            if (!FootprintIsOnAllowedFloor(cells, definition)) return PlacementResult.Invalid("Must be placed on terminal floor.", cells);
+            if (!FootprintIsIndoors(cells)) return PlacementResult.Invalid("Must be placed indoors.", cells);
+            if (WouldBlockPassengerPaths(cells)) return PlacementResult.Invalid("Cannot block all passenger paths.", cells);
             return PlacementResult.Valid(DefaultValidMessage(definition), cells, false);
         }
 
         private PlacementResult ValidateSecurity(BuildableDefinition definition, Vector2Int origin, Vector2Int[] cells)
         {
-            if (!airport.HasBuildable(BuildableType.CheckIn) && !airport.HasBuildable(BuildableType.Kiosk)) return PlacementResult.Invalid("Requires check-in before security.", cells);
-            if (!HasClearTilesInFront(origin, definition.size.x, 2)) return PlacementResult.Invalid("Security needs queue space before it.", cells);
+            if (!airport.HasBuildable(BuildableType.CheckIn)) return PlacementResult.Invalid("Requires check-in desk first.", cells);
+            if (!FootprintIsOnAllowedFloor(cells, definition)) return PlacementResult.Invalid("Must be placed on terminal floor.", cells);
+            if (!FootprintIsIndoors(cells)) return PlacementResult.Invalid("Must be placed indoors.", cells);
+            if (WouldBlockPassengerPaths(cells)) return PlacementResult.Invalid("Cannot block all passenger paths.", cells);
             return PlacementResult.Valid(DefaultValidMessage(definition), cells, false);
         }
 
         private PlacementResult ValidateSeating(BuildableDefinition definition, Vector2Int origin, Vector2Int[] cells)
         {
-            if (!airport.HasBuildable(BuildableType.Security)) return PlacementResult.Invalid("Waiting area must be placed after security.", cells);
+            if (!FootprintIsOnAllowedFloor(cells, definition)) return PlacementResult.Invalid("Must be placed on terminal floor.", cells);
+            if (!FootprintIsIndoors(cells)) return PlacementResult.Invalid("Must be placed indoors.", cells);
+            if (WouldBlockPassengerPaths(cells)) return PlacementResult.Invalid("Cannot block main paths.", cells);
             return PlacementResult.Valid(DefaultValidMessage(definition), cells, false);
         }
 
         private PlacementResult ValidateSmallGate(BuildableDefinition definition, Vector2Int origin, Vector2Int[] cells)
         {
             if (!airport.HasBuildable(BuildableType.Security)) return PlacementResult.Invalid("Requires security checkpoint first.", cells);
-            if (!airport.HasBuildable(BuildableType.Runway)) return PlacementResult.Invalid("No runway exists.", cells);
-            if (!airport.HasBuildable(BuildableType.Taxiway)) return PlacementResult.Invalid("Gate must connect to taxiway.", cells);
-            if (!airport.HasBuildableWithin(BuildableType.Seating, origin, 10)) return PlacementResult.Invalid("Must be placed next to gate seating.", cells);
-            bool inefficient = !airport.HasBuildableWithin(BuildableType.Seating, origin, 6);
-            return PlacementResult.Valid(inefficient ? "Allowed, but inefficient: seating should be within 6 tiles for best boarding." : DefaultValidMessage(definition), cells, inefficient);
+            if (!FootprintIsOnAllowedFloor(cells, definition)) return PlacementResult.Invalid("Must be placed on terminal floor.", cells);
+            if (!FootprintTouchesTerminalEdge(cells)) return PlacementResult.Invalid("Gate must face outside.", cells);
+            if (!FootprintHasAdjacentBuildable(cells, BuildableType.Taxiway)) return PlacementResult.Invalid("Gate must connect to taxiway.", cells);
+            if (WouldBlockPassengerPaths(cells)) return PlacementResult.Invalid("Cannot block all passenger paths.", cells);
+            return PlacementResult.Valid(DefaultValidMessage(definition), cells, false);
         }
 
         private PlacementResult ValidateRunway(BuildableDefinition definition, Vector2Int origin, Vector2Int[] cells)
         {
+            if (!RunwayIsStraight(definition)) return PlacementResult.Invalid("Runway must be straight.", cells);
+            if (!FootprintIsOpenGround(cells)) return PlacementResult.Invalid("Runway must be outdoors.", cells);
+            if (FootprintTouchesAnyFloor(cells)) return PlacementResult.Invalid("Runway must be outdoors.", cells);
             return PlacementResult.Valid(DefaultValidMessage(definition), cells, false);
         }
 
         private PlacementResult ValidateTaxiway(BuildableDefinition definition, Vector2Int origin, Vector2Int[] cells)
         {
+            if (!FootprintIsOpenGround(cells)) return PlacementResult.Invalid("Taxiway must be outdoors.", cells);
+            if (!FootprintHasAdjacentBuildable(cells, BuildableType.Runway)) return PlacementResult.Invalid("Taxiway must connect to runway.", cells);
+            if (!FootprintTouchesTerminalEdge(cells) && !FootprintHasAdjacentBuildable(cells, BuildableType.SmallGate)) return PlacementResult.Invalid("Must connect to terminal.", cells);
             return PlacementResult.Valid(DefaultValidMessage(definition), cells, false);
         }
 
-        private PlacementResult ValidateBagDrop(BuildableDefinition definition, Vector2Int origin, Vector2Int[] cells)
+        private PlacementResult ValidateIndoorTerminalObject(BuildableDefinition definition, Vector2Int origin, Vector2Int[] cells)
         {
-            if (!HasAdjacent(BuildableType.CheckIn, origin, definition.size)) return PlacementResult.Invalid("Bag drop must sit next to or behind a check-in desk.", cells);
+            if (!FootprintIsOnAllowedFloor(cells, definition)) return PlacementResult.Invalid("Must be placed on terminal floor.", cells);
+            if (!FootprintIsIndoors(cells)) return PlacementResult.Invalid("Must be placed indoors.", cells);
+            if (WouldBlockPassengerPaths(cells)) return PlacementResult.Invalid("Cannot block all passenger paths.", cells);
             return PlacementResult.Valid(DefaultValidMessage(definition), cells, false);
         }
 
-        private PlacementResult ValidateCarousel(BuildableDefinition definition, Vector2Int origin, Vector2Int[] cells)
+        private bool FootprintIsInBounds(List<Vector2Int> footprint)
         {
-            if (!airport.HasBuildable(BuildableType.SmallGate)) return PlacementResult.Invalid("Baggage carousel requires a gate and arrivals path first.", cells);
-            if (!HasAdjacent(BuildableType.Conveyor, origin, definition.size)) return PlacementResult.Invalid("Baggage carousel must connect to a conveyor belt.", cells);
-            return PlacementResult.Valid(DefaultValidMessage(definition), cells, false);
+            for (int i = 0; i < footprint.Count; i++)
+            {
+                if (!grid.InBounds(footprint[i])) return false;
+            }
+            return true;
         }
 
-        private PlacementResult ValidatePassport(BuildableDefinition definition, Vector2Int origin, Vector2Int[] cells)
+        private bool FootprintOverlapsObject(List<Vector2Int> footprint)
         {
-            if (airport.level < 5) return PlacementResult.Invalid("International processing requires airport level 5.", cells);
-            return PlacementResult.Valid(DefaultValidMessage(definition), cells, false);
+            for (int i = 0; i < footprint.Count; i++)
+            {
+                GridCell cell = grid.GetCell(footprint[i]);
+                if (cell != null && cell.HasBuildable) return true;
+            }
+            return false;
+        }
+
+        private bool FootprintIsOnAllowedFloor(Vector2Int[] cells, BuildableDefinition definition)
+        {
+            for (int i = 0; i < cells.Length; i++)
+            {
+                if (!CellHasAllowedFloor(grid.GetCell(cells[i]), definition)) return false;
+            }
+            return true;
+        }
+
+        private bool FootprintIsOpenGround(Vector2Int[] cells)
+        {
+            for (int i = 0; i < cells.Length; i++)
+            {
+                GridCell cell = grid.GetCell(cells[i]);
+                if (cell == null || cell.HasFloor || cell.HasBuildable) return false;
+            }
+            return true;
+        }
+
+        private bool FootprintIsIndoors(Vector2Int[] cells)
+        {
+            for (int i = 0; i < cells.Length; i++)
+            {
+                foreach (Vector2Int neighbor in grid.GetCardinalNeighbors(cells[i]))
+                {
+                    GridCell neighborCell = grid.GetCell(neighbor);
+                    if (neighborCell == null || !neighborCell.HasFloor) return false;
+                }
+
+                if (cells[i].x == 0 || cells[i].y == 0 || cells[i].x == grid.Width - 1 || cells[i].y == grid.Height - 1) return false;
+            }
+            return true;
+        }
+
+        private bool FootprintTouchesTerminalEdge(Vector2Int[] cells)
+        {
+            for (int i = 0; i < cells.Length; i++)
+            {
+                if (cells[i].x == 0 || cells[i].y == 0 || cells[i].x == grid.Width - 1 || cells[i].y == grid.Height - 1) return true;
+
+                foreach (Vector2Int neighbor in grid.GetCardinalNeighbors(cells[i]))
+                {
+                    GridCell neighborCell = grid.GetCell(neighbor);
+                    if (neighborCell != null && !neighborCell.HasFloor) return true;
+                }
+            }
+            return false;
+        }
+
+        private bool FootprintTouchesAnyFloor(Vector2Int[] cells)
+        {
+            for (int i = 0; i < cells.Length; i++)
+            {
+                foreach (Vector2Int neighbor in grid.GetCardinalNeighbors(cells[i]))
+                {
+                    GridCell neighborCell = grid.GetCell(neighbor);
+                    if (neighborCell != null && neighborCell.HasFloor) return true;
+                }
+            }
+            return false;
+        }
+
+        private bool FootprintHasAdjacentBuildable(Vector2Int[] cells, BuildableType type)
+        {
+            for (int i = 0; i < cells.Length; i++)
+            {
+                foreach (Vector2Int neighbor in grid.GetCardinalNeighbors(cells[i]))
+                {
+                    GridCell neighborCell = grid.GetCell(neighbor);
+                    if (neighborCell != null && neighborCell.Buildable != null && neighborCell.Buildable.Definition.type == type) return true;
+                }
+            }
+            return false;
+        }
+
+        private bool WouldBlockPassengerPaths(Vector2Int[] proposedBlockers)
+        {
+            HashSet<Vector2Int> blocked = new HashSet<Vector2Int>();
+            for (int i = 0; i < proposedBlockers.Length; i++) blocked.Add(proposedBlockers[i]);
+
+            List<Vector2Int> openFloorCells = new List<Vector2Int>();
+            for (int x = 0; x < grid.Width; x++)
+            {
+                for (int y = 0; y < grid.Height; y++)
+                {
+                    Vector2Int position = new Vector2Int(x, y);
+                    GridCell cell = grid.GetCell(position);
+                    if (cell == null || !cell.HasFloor) continue;
+                    if (blocked.Contains(position)) continue;
+                    if (cell.HasBuildable) continue;
+                    openFloorCells.Add(position);
+                }
+            }
+
+            if (openFloorCells.Count < 2) return true;
+
+            HashSet<Vector2Int> visited = new HashSet<Vector2Int>();
+            Queue<Vector2Int> queue = new Queue<Vector2Int>();
+            queue.Enqueue(openFloorCells[0]);
+            visited.Add(openFloorCells[0]);
+
+            while (queue.Count > 0)
+            {
+                Vector2Int current = queue.Dequeue();
+                foreach (Vector2Int neighbor in grid.GetCardinalNeighbors(current))
+                {
+                    if (visited.Contains(neighbor) || blocked.Contains(neighbor)) continue;
+                    GridCell neighborCell = grid.GetCell(neighbor);
+                    if (neighborCell == null || !neighborCell.HasFloor || neighborCell.HasBuildable) continue;
+                    visited.Add(neighbor);
+                    queue.Enqueue(neighbor);
+                }
+            }
+
+            return visited.Count != openFloorCells.Count;
+        }
+
+        private bool RunwayIsStraight(BuildableDefinition definition)
+        {
+            return definition.size.x >= definition.size.y * 3 || definition.size.y >= definition.size.x * 3;
         }
 
         private bool CellHasAllowedFloor(GridCell cell, BuildableDefinition definition)
@@ -162,40 +270,6 @@ namespace SkyHubTycoon.Build
             for (int i = 0; i < definition.allowedFloors.Length; i++)
             {
                 if (cell.Floor.Definition == definition.allowedFloors[i]) return true;
-            }
-            return false;
-        }
-
-        private bool HasClearTilesInFront(Vector2Int origin, int width, int distance)
-        {
-            for (int dy = 1; dy <= distance; dy++)
-            {
-                for (int dx = 0; dx < width; dx++)
-                {
-                    Vector2Int position = new Vector2Int(origin.x + dx, origin.y - dy);
-                    if (!grid.InBounds(position)) return false;
-                    GridCell cell = grid.GetCell(position);
-                    if (cell.HasBuildable) return false;
-                }
-            }
-            return true;
-        }
-
-        private bool IsOutdoorEdge(Vector2Int origin, Vector2Int size)
-        {
-            return origin.x == 0 || origin.y == 0 || origin.x + size.x >= grid.Width || origin.y + size.y >= grid.Height;
-        }
-
-        private bool HasAdjacent(BuildableType type, Vector2Int origin, Vector2Int size)
-        {
-            List<Vector2Int> footprint = grid.GetFootprint(origin, size);
-            for (int i = 0; i < footprint.Count; i++)
-            {
-                foreach (Vector2Int neighbor in grid.GetCardinalNeighbors(footprint[i]))
-                {
-                    GridCell cell = grid.GetCell(neighbor);
-                    if (cell.HasBuildable && cell.Buildable.Definition.type == type) return true;
-                }
             }
             return false;
         }

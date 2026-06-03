@@ -84,9 +84,9 @@ namespace SkyHubTycoon.UI
         {
             if (airport == null) return;
             if (moneyText != null) moneyText.text = "Money: $" + airport.money.ToString("N0");
-            if (satisfactionText != null) satisfactionText.text = "Satisfaction: " + Mathf.RoundToInt(airport.satisfaction) + "%";
-            if (reputationText != null) reputationText.text = "Reputation: ★ " + airport.reputation.ToString("0.0");
-            if (flightText != null) flightText.text = "Flights: " + airport.handledFlights + " / 3";
+            if (satisfactionText != null) satisfactionText.text = "Mode: First playable build prototype";
+            if (reputationText != null) reputationText.text = "Camera: WASD pan · Wheel zoom";
+            if (flightText != null) flightText.text = "Objects: " + airport.Buildables.Count;
             if (systemsText != null) systemsText.text = BuildSystemsText();
             if (staffText != null) staffText.text = BuildStaffText();
             if (unlocksText != null) unlocksText.text = BuildUnlockText();
@@ -94,38 +94,28 @@ namespace SkyHubTycoon.UI
 
         private string BuildSystemsText()
         {
-            List<string> lines = new List<string>();
-            lines.Add("Systems");
-            lines.Add((airport.HasPassengerRoute() ? "✓" : "!") + " Passenger route");
-            lines.Add((airport.HasAirfieldRoute() ? "✓" : "!") + " Airfield route");
-            lines.Add((airport.HasBaggageRoute() ? "✓" : "!") + " Baggage route");
-            lines.Add("Power: " + airport.SumPowerUse() + " / " + airport.SumPowerProduction());
-            lines.Add("Water: " + airport.SumWaterUse() + " / " + airport.SumWaterProduction());
-            if (airport.SystemProblems.Count > 0)
-            {
-                lines.Add("");
-                for (int i = 0; i < airport.SystemProblems.Count; i++) lines.Add("• " + airport.SystemProblems[i]);
-            }
-            return string.Join("\n", lines.ToArray());
+            return "Build Goal\n"
+                + "1. Paint basic terminal floor.\n"
+                + "2. Place entrance, check-in, security, seats, and gate on floor.\n"
+                + "3. Connect Entrance → Check-in → Security → Waiting → Gate.\n"
+                + "4. Connect gate and runway with taxiway before scheduling.";
         }
 
         private string BuildStaffText()
         {
-            return "Staff\nJanitors: " + airport.janitors
-                + "\nSecurity: " + airport.securityOfficers
-                + "\nCheck-in: " + airport.checkInAgents
-                + "\nGate: " + airport.gateAgents
-                + "\nBaggage: " + airport.baggageHandlers;
+            return "Controls\n"
+                + "Left click: place selected item\n"
+                + "WASD / Arrows: smooth pan\n"
+                + "Mouse wheel: smooth zoom\n"
+                + "Q / E or button: rotate 90°";
         }
 
         private string BuildUnlockText()
         {
-            return "Unlocks\nLevel " + airport.level + "\n"
-                + "1 Tiny: first 3 flights\n"
-                + "2 Local: 100 passengers\n"
-                + "3 Regional: 70% satisfaction\n"
-                + "4 National: 1,000 passengers\n"
-                + "5 International: 5-star airport";
+            return "Placement Feedback\n"
+                + "Green preview: valid placement\n"
+                + "Red preview: invalid placement\n"
+                + "Objects snap to the square grid.";
         }
 
         private void PopulateBuildMenu()
@@ -198,15 +188,11 @@ namespace SkyHubTycoon.UI
             unlocksText = CreateText(right, "Unlocks", font, 14, TextAnchor.UpperLeft);
             AddVerticalLayout(right.gameObject);
 
-            RectTransform bottom = CreatePanel(canvas.transform, "Bottom Controls", new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 64f), new Vector2(760f, 110f));
+            RectTransform bottom = CreatePanel(canvas.transform, "Bottom Controls", new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 64f), new Vector2(760f, 92f));
             selectedToolText = CreateText(bottom, "Tool", font, 16, TextAnchor.MiddleLeft);
             placementHintText = CreateText(bottom, "Hint", font, 14, TextAnchor.MiddleLeft);
-            CreateButton(bottom, "Schedule next flight", delegate { if (flightScheduler != null) flightScheduler.ScheduleNextFlight(); });
-            CreateButton(bottom, "Hire staff", delegate { if (airport != null) airport.HireRandomStaff(); });
+            CreateButton(bottom, "Schedule flight", delegate { if (flightScheduler != null) flightScheduler.ScheduleNextFlight(); });
             CreateButton(bottom, "Rotate 90°", delegate { if (cameraController != null) cameraController.Rotate90(1); });
-            CreateButton(bottom, "Roofs", ToggleRoofs);
-            CreateButton(bottom, "Cutaway", ToggleCutaway);
-            CreateButton(bottom, "Grid", ToggleGrid);
             AddHorizontalLayout(bottom.gameObject);
 
             GameObject alertsObject = new GameObject("Alerts");
@@ -312,7 +298,7 @@ namespace SkyHubTycoon.UI
             Text title = CreateText(menu, "SkyHub Tycoon", font, 46, TextAnchor.MiddleCenter);
             title.color = new Color(0.55f, 0.93f, 1f);
             CreateText(menu, "Controls: Left click builds · WASD / Arrow keys pan · Mouse wheel zooms · Q/E rotate · Escape pauses", font, 18, TextAnchor.MiddleCenter);
-            CreateText(menu, "Build a complete airport flow, then schedule flights for money and reputation.", font, 18, TextAnchor.MiddleCenter);
+            CreateText(menu, "First playable prototype: select items, preview valid/invalid placements, and snap them cleanly to the grid. No passengers yet.", font, 18, TextAnchor.MiddleCenter);
             CreateButton(menu, "Play", PlayGame);
             CreateButton(menu, "Settings: Browser-friendly defaults are enabled", delegate { });
             // No Quit button is created: WebGL games run inside a browser tab.

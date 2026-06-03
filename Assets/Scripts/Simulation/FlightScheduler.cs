@@ -1,12 +1,14 @@
 using UnityEngine;
 using SkyHubTycoon.Data;
 using SkyHubTycoon.UI;
+using SkyHubTycoon.Grid;
 
 namespace SkyHubTycoon.Simulation
 {
     public class FlightScheduler : MonoBehaviour
     {
         public AirportState airport;
+        public GridManager grid;
         public AlertManager alertManager;
 
         public void ScheduleNextFlight()
@@ -14,9 +16,15 @@ namespace SkyHubTycoon.Simulation
             if (airport == null) return;
             airport.RecalculateSystems();
 
-            if (airport.SystemProblems.Count > 0)
+            AirportFlowValidator.FlowValidationResult flow = ValidateFlow();
+            if (!flow.valid)
             {
-                PushAlert("Flight cannot operate. " + airport.SystemProblems[0]);
+                for (int i = 0; i < flow.issues.Count; i++)
+                {
+                    AirportFlowValidator.FlowIssue issue = flow.issues[i];
+                    if (issue.hasFocus) PushAlert(issue.message, issue.focusPosition);
+                    else PushAlert(issue.message);
+                }
                 return;
             }
 
@@ -33,9 +41,21 @@ namespace SkyHubTycoon.Simulation
             airport.RecalculateSystems();
         }
 
+        private AirportFlowValidator.FlowValidationResult ValidateFlow()
+        {
+            AirportFlowValidator validator = new AirportFlowValidator(grid, airport);
+            return validator.ValidateBasicDepartingFlight();
+        }
+
         private void PushAlert(string message)
         {
             if (alertManager != null) alertManager.Push(message);
+            else Debug.Log(message);
+        }
+
+        private void PushAlert(string message, Vector3 focusPosition)
+        {
+            if (alertManager != null) alertManager.Push(message, focusPosition);
             else Debug.Log(message);
         }
     }
