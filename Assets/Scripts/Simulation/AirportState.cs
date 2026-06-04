@@ -26,6 +26,7 @@ namespace SkyHubTycoon.Simulation
 
         private readonly List<BuildableInstance> buildables = new List<BuildableInstance>();
         private readonly List<string> systemProblems = new List<string>();
+        private float passengerSatisfactionPenalty;
 
         public event Action Changed;
         public IReadOnlyList<BuildableInstance> Buildables { get { return buildables; } }
@@ -132,7 +133,7 @@ namespace SkyHubTycoon.Simulation
             if (powerUse > powerProduction) systemProblems.Add("Power grid overloaded. Add generators or power rooms.");
             if (waterUse > waterProduction) systemProblems.Add("Water demand exceeds plumbing hub capacity.");
 
-            satisfaction = Mathf.Clamp(82f + Count(BuildableType.Seating) * 2f + Count(BuildableType.Coffee) * 3f + Count(BuildableType.Bathroom) * 3f - (powerUse > powerProduction ? 12f : 0f) - (waterUse > waterProduction ? 8f : 0f) - (!passengerRoute ? 10f : 0f), 28f, 98f);
+            satisfaction = Mathf.Clamp(82f + Count(BuildableType.Seating) * 2f + Count(BuildableType.Coffee) * 3f + Count(BuildableType.Bathroom) * 3f - passengerSatisfactionPenalty - (powerUse > powerProduction ? 12f : 0f) - (waterUse > waterProduction ? 8f : 0f) - (!passengerRoute ? 10f : 0f), 28f, 98f);
             reputation = Mathf.Min(5f, 1.3f + handledFlights * 0.08f + satisfaction / 120f);
 
             if (passengers >= 100 && level < 2) level = 2;
@@ -141,6 +142,13 @@ namespace SkyHubTycoon.Simulation
             if (reputation >= 4.5f && level < 5) level = 5;
 
             RaiseChanged();
+        }
+
+
+        public void AdjustPassengerSatisfaction(float delta)
+        {
+            passengerSatisfactionPenalty = Mathf.Clamp(passengerSatisfactionPenalty - delta, 0f, 50f);
+            RecalculateSystems();
         }
 
         public int Count(BuildableType type)
